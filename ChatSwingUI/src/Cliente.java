@@ -25,6 +25,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+
+
 public class Cliente extends JFrame implements ActionListener, KeyListener {
 	private static final long serialVersionUID = 1L;
 	private JTextArea texto;
@@ -42,7 +44,8 @@ public class Cliente extends JFrame implements ActionListener, KeyListener {
 	private JTextField txtPorta;
 	private JTextField txtNome;
 	private JLabel lbDigitando;
-	private JLabel lbtextDigitando;
+	public static final String DIGITANDO = "<!dig...!>";
+	public static final String NAO_DIGITANDO = "<!no_dig...!>";
 
 	public Cliente() throws IOException {
 
@@ -60,7 +63,6 @@ public class Cliente extends JFrame implements ActionListener, KeyListener {
 		txtMsg = new JTextField(20);
 		lblHistorico = new JLabel("Bate papo");
 		lbDigitando = new JLabel("");
-		lbtextDigitando = new JLabel("Digitando:");
 		lblMsg = new JLabel("Mensagem");
 		btnSend = new JButton("Enviar");
 		btnSend.setToolTipText("Enviar Mensagem");
@@ -108,33 +110,34 @@ public class Cliente extends JFrame implements ActionListener, KeyListener {
 		bfw.flush();
 	}
 
+	public void atualizarDigitando(String situacao) {
+		if (situacao.equals(DIGITANDO)) {
+			lbDigitando.setText("Alguém está digitando");
+		} else {
+			lbDigitando.setText("");
+		}
+	}
+
 	public void enviarMensagem(String msg) throws IOException {
 
 		if (msg.equals("Sair") || msg.equals("sair")) {
 			bfw.write("Desconectado \r\n");
 			texto.append("Desconectado \r\n");
 		} else {
-			bfw.write(msg + "\r\n");
-			texto.append(txtNome.getText() + ": " + txtMsg.getText() + "\r\n");
+
+			if (msg.equals(DIGITANDO) || msg.equals(NAO_DIGITANDO)) {
+				bfw.write(msg + "\r\n");
+			} else {
+				bfw.write(msg + "\r\n");
+				texto.append(txtNome.getText() + ": " + txtMsg.getText() + "\r\n");
+				txtMsg.setText("");
+			}
+			
+			System.out.println(msg);
+
 		}
 		bfw.flush();
-		txtMsg.setText("");
-		lbDigitando.setText("");
-	}
 
-	public void teclando(String msg) {
-		try {
-			if (msg.equals("")) {
-				bfw.write("\r");
-				lbDigitando.setText("");
-				
-			} else {
-				bfw.write(msg);
-			}
-			bfw.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public void escutar() throws IOException {
@@ -144,23 +147,24 @@ public class Cliente extends JFrame implements ActionListener, KeyListener {
 		BufferedReader bfr = new BufferedReader(inr);
 		String msg = "";
 
-		while (!"Sair".equalsIgnoreCase(msg))
+		while (true)
 
 			if (bfr.ready()) {
 				msg = bfr.readLine();
 				if (msg.equals("Sair") || msg.equals("sair")) {
 					texto.append("Servidor caiu! \r\n");
 				} else {
-					texto.append(msg + "\r\n");
+					if(msg.contains(DIGITANDO)) {
+						atualizarDigitando(DIGITANDO);
+					}else if(msg.contains(NAO_DIGITANDO)) {
+						atualizarDigitando(NAO_DIGITANDO);
+					}else {
+						texto.append(msg + "\r\n");
+					}
+					
 				}
 
-				lbDigitando.setText(msg);
-				System.out.println("Msg = " + msg);
-
 			}
-		
-		
-		
 
 	}
 
@@ -197,8 +201,12 @@ public class Cliente extends JFrame implements ActionListener, KeyListener {
 				e1.printStackTrace();
 			}
 		} else {
-			teclando(txtNome.getText() + " está digitando!\r\n");
-
+			try {
+				enviarMensagem(DIGITANDO);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		}
 
 	}
@@ -206,13 +214,12 @@ public class Cliente extends JFrame implements ActionListener, KeyListener {
 	@Override
 	public void keyReleased(KeyEvent arg0) {
 		try {
-			Thread.sleep(500);
-		} catch (InterruptedException e) {
+			enviarMensagem(NAO_DIGITANDO);
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		teclando("");
-		
+
 	}
 
 	@Override

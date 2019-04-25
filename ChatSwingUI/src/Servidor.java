@@ -62,14 +62,17 @@ public class Servidor extends Thread {
 
 	public void sendToAll(BufferedWriter bwSaida, String msg) throws IOException {
 		BufferedWriter bwS;
-	
+
 		for (BufferedWriter bw : clientes) {
 			bwS = (BufferedWriter) bw;
 			if (!(bwSaida == bwS)) {
+				System.out.println("Aqui" + msg);
+
 				bw.write(msg + "\r\n");
+
 				bw.flush();
 			}
-			
+
 		}
 	}
 
